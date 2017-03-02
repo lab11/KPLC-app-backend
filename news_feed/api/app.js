@@ -1,11 +1,9 @@
-#!/usr/bin/env node
-
 //Adding module
 var express = require('express'); 
 var mustacheExpress = require('mustache-express'); 
 var bodyParser = require('body-parser');
 var pg = require('pg')
-//var conString = "postgres://postgres:gridwatch@localhost:5432/gridwatch";
+//var conString = "postgres://postgres:gridwatch@141.212.11.206:5432/capstone";
 var conString = "postgres://nklugman:gridwatch@localhost:5432/capstone";
 //Initialize
 var app = express();
@@ -25,6 +23,78 @@ app.get('/newsfeed', function (req, res) {
     } else {
       queryExpr = "SELECT * From news_feed where time > \'" + time +"\'";
     }
+    var query = client.query(queryExpr);
+    query.on("row", function (row, result) {
+         result.addRow(row);
+    });
+    query.on("end", function (result) {
+        
+     // On end JSONify and write the results to console and to HTML output
+     console.log(JSON.stringify(result.rows, null, "    "));
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.write(JSON.stringify(result.rows) + "\n");
+        res.end();
+     });
+
+});
+app.get('/payment', function (req, res) {
+  console.log("payment");
+
+    //var date = req.query.date;
+    var account = req.query.account;
+    var client = new pg.Client(conString);
+    client.connect();
+    var queryExpr;
+    queryExpr = "SELECT * From postpaid where payDate is null and account = \'" + account +"\'";
+    console.log(queryExpr);
+    var query = client.query(queryExpr);
+    query.on("row", function (row, result) {
+         result.addRow(row);
+    });
+    query.on("end", function (result) {
+        
+     // On end JSONify and write the results to console and to HTML output
+     console.log(JSON.stringify(result.rows, null, "    "));
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.write(JSON.stringify(result.rows) + "\n");
+        res.end();
+     });
+
+});
+app.get('/balance', function (req, res) {
+  console.log("balance");
+
+    //var date = req.query.date;
+    var account = req.query.account;
+    var client = new pg.Client(conString);
+    client.connect();
+    var queryExpr;
+    queryExpr = "SELECT * From postpaid where month = (select max(month) from postpaid where account = \'" + account +"\') and account = \'" + account +"\'";
+    console.log(queryExpr);
+    var query = client.query(queryExpr);
+    query.on("row", function (row, result) {
+         result.addRow(row);
+    });
+    query.on("end", function (result) {
+        
+     // On end JSONify and write the results to console and to HTML output
+     console.log(JSON.stringify(result.rows, null, "    "));
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.write(JSON.stringify(result.rows) + "\n");
+        res.end();
+     });
+
+});
+app.get('/token', function (req, res) {
+  console.log("token");
+
+    //var date = req.query.date;
+    var account = req.query.account;
+    var client = new pg.Client(conString);
+    client.connect();
+    var queryExpr;
+    queryExpr = "SELECT * From token where date = (select max(date) from token where account = \'" + account +"\') and account = \'" + account +"\'";
+    console.log(queryExpr);
     var query = client.query(queryExpr);
     query.on("row", function (row, result) {
          result.addRow(row);
