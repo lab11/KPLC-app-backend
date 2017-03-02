@@ -1,0 +1,14 @@
+{
+  "name": "google_plus",
+  "version": "1.0.0",
+  "description": "",
+  "main": "google_plus_scraper.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "googleapis": "^16.1.0"
+  }
+}

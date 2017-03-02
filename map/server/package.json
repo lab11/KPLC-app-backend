@@ -1,0 +1,11 @@
+{
+  "name": "kplc_app_backend_mapserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "realtime_map_server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

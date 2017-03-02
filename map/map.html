@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>KPLC Outage Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app_id" style="display: none;"></div>
+    <div id="loc" style="display: none;"></div>
+    <div id="info"><center>All information is not guaranteed to be correct, this is just a prototype.</center></div>
+    <div id="map"></div>
+    <script src='socket_io/socket.io.js'></script>
+
+<script type="text/javascript">
+    function showAndroidToast(toast) {
+        Android.showToast(toast);
+    }
+</script>
+    <script>
+      var socket = io('http://141.212.11.206:9000');
+      socket.on('connected', function (data) {
+        socket.emit('ready for data', {});
+	console.log('connected')
+      });
+      socket.on('update', function (data) {
+        var res = JSON.parse(data.payload);
+	//var res = data.payload.split(",");
+	//Do color parsing here
+        res.forEach(function(element) {
+		var cur_inx = element['region']['shp_idx'];
+		console.log(cur_inx);
+		var cur_cnt = element['region']['cnt'];
+		var data = JSON.parse(element['region']['data']);
+		map.data.forEach(function(feature) {
+			if (cur_inx.toString() === feature.getProperty('OBJECTID').toString()) {
+//				f			console.log(feature.getProperty('OBJECTID') + " HIT")
+				feature.setProperty('cnt',cur_cnt);
+				feature.setProperty('data',data);
+				feature.setProperty('isColorful', true);
+			}
+	        });
+	});
+      });
+
+
+
+ 
+      var map;
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 7,
+          center: {lat: 0.02, lng: 37.9}
+        });
+
+	var iwindow= new google.maps.InfoWindow;
+
+
+        // Load GeoJSON.
+        map.data.loadGeoJson('data/cons_kenya.json');
+
+	var infowindow = new google.maps.InfoWindow({
+        });
+
+	setTimeout(function() {
+	   map.data.forEach(function(feature) {
+		//console.log(feature.getProperty('COUNTY'));
+	   });
+	}, 1000);
+
+	 map.data.setStyle(function(feature) {
+          var color = 'green';
+	  if (feature.getProperty('isColorful')){
+	       var cnt = feature.getProperty('cnt');
+	       
+	       if (cnt == 1) {
+	          color = 'yellow';
+	       } 
+	       if (cnt == 2) {
+		  color = 'orange';
+	       }
+	       if (cnt >= 3) {
+		  color = 'red';
+	       }	
+	  }
+//          if (feature.getProperty('isColorful')) {
+//            color = 'red';
+//          } 
+          return /** @type {google.maps.Data.StyleOptions} */({
+            fillColor: color,
+            strokeColor: color,
+            strokeWeight: 2
+          });
+        });
+
+	/*
+        map.data.setStyle(function(feature) {
+          fillColor: 'green',
+          strokeWeight: 1
+        });
+	*/
+
+        
+
+
+    	map.data.addListener('click', function(event) {
+		//window.alert(event.feature.getProperty('COUNTY'));
+		console.log(event);
+		//iwindow.setContent(event.feature.getProperty('OBJECTID'));
+		try {
+		var source = event['feature'].getProperty('data')['service'];
+		if (source == 'f') {
+			source = 'facebook'
+		} 
+		if (source == 't') {
+			source = 'twitter'
+		}
+		if (source == 'a') {
+			source = 'app'
+		}
+              var contentString = '<html><head><style>.button1 {background-color: #4CAf50;} .button2{background-color: #f44336;}</style></head><body><div id="content">'+
+            '<div id="siteNotice">'+
+            '</div>'+
+	    '<div id="obj" style="display: none;">'+event['feature'].getProperty('OBJECTID').toString()+'</div>'+
+            '<h1 id="firstHeading" class="firstHeading">Information</h1>'+
+            '<div id="bodyContent" align="center">'+
+            '<p>msg: '+event['feature'].getProperty('data')['msg']+'</p>'+
+            '<p>source: '+source+'</p>'+
+	    'cnt: ' + event['feature'].getProperty('cnt') + '</b><p>'+
+	    '<textarea align="center" id="notes" rows="3" onblur="onBlur(this)" onfocus="onFocus(this)" cols="50">Enter (optional) notes here.</textarea><p>'+
+	    '<button onclick="vote(\'up\')" class="button1" type="button">My power is bad as well!</button>'+
+	    '<button onclick="vote(\'down\')" class="button2" type="button">This map is wrong!</button>'+
+            '</div>'+
+            '</div>';
+	}
+		catch (e) {
+              var contentString = '<div id="content">'+
+            '<div id="siteNotice">'+
+            '</div>'+
+	    '<div id="obj" style="display: none;">'+event['feature'].getProperty('OBJECTID').toString()+'</div>'+
+            '<h1 id="firstHeading" class="firstHeading">Information</h1>'+
+            '<div id="bodyContent" align="center">'+
+	    '<p> We do not have any information about power in this area. </p>'+
+	    '<textarea align="center" id="notes" rows="3" onblur="onBlur(this)" onfocus="onFocus(this)" cols="50">Enter (optional) notes here.</textarea><p>'+
+	    '<button onclick="vote(\'up\')" class="button1" type="button">My power is bad here!</button>'+
+            '</div>'+
+            '</div> </body> </html>';
+	}
+		iwindow.setContent(contentString);
+		iwindow.setPosition(event.latLng);
+		iwindow.open(map);
+
+        });
+}	
+
+
+    //todo add in app id to uniquely identify client
+
+function onBlur(el) {
+    if (el.value == '') {
+        el.value = el.defaultValue;
+    }
+}
+function onFocus(el) {
+    if (el.value == el.defaultValue) {
+        el.value = '';
+    }
+}
+
+      function vote(direction){
+       var note = (document.getElementById('notes').value);
+       var shp_idx = (document.getElementById('obj').innerHTML);
+//	console.log(msg['OBJECTID']) 
+	/*
+        if (navigator.geolocation) {
+           console.log(navigator.geolocation.getCurrentPosition(showPosition));
+        }
+	*/
+        socket.emit('vote', {direction,note,shp_idx});
+      }
+      //}
+    </script>
+
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBoqfEFIb-4zSOxYRgXnyDA5arE2gzv4J8&callback=initMap">
+    </script>
+  </body>
+</html>
